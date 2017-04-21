@@ -24,7 +24,6 @@ state and federal laws. Developers assume no liability and are not
 responsible for any misuse or damage caused by this program.
 This disclaimer was shamelessy copied from sqlmap with minor modifications :)
     `
-	PROXY_ADDR = "127.0.0.1:9050"
 )
 
 type options struct {
@@ -41,6 +40,7 @@ type options struct {
 	finishAfter    time.Duration
 	quiet          bool
 	tor            bool
+	torAddress     string
 }
 
 func (o *options) String() string {
@@ -55,8 +55,9 @@ func (o *options) String() string {
 		"https:         %t\n"+
 		"DOS header:    %s\n"+
 		"finish after:  %s\n"+
-		"tor:           %v\n\n", o.numConnections, o.interval, o.timeout, o.method,
-		o.resource, o.userAgent, o.target, o.https, o.dosHeader, o.finishAfter, o.tor)
+		"tor:           %v\n"+
+		"tor address:   %s\n\n", o.numConnections, o.interval, o.timeout, o.method,
+		o.resource, o.userAgent, o.target, o.https, o.dosHeader, o.finishAfter, o.tor, o.torAddress)
 }
 
 func main() {
@@ -74,6 +75,7 @@ func main() {
 	flag.BoolVar(&opts.timermode, "timermode", false, "Measure the timeout of the server. connections flag is omitted")
 	flag.BoolVar(&opts.quiet, "quiet", false, "forward stdout to /dev/null")
 	flag.BoolVar(&opts.tor, "tor", true, "Use TOR SOCKS5 proxy")
+	flag.StringVar(&opts.torAddress, "toraddress", "127.0.0.1:9050", "TOR SOCKS5 proxy address")
 	flag.DurationVar(&opts.finishAfter, "finishafter", 0, "Seconds to wait before finishing the request. If zero the request is never finished")
 	flag.Parse()
 
@@ -228,7 +230,7 @@ func openConnection(opts options) (net.Conn, error) {
 	var err error
 	if opts.tor {
 		// create a socks5 dialer
-		torDialer, err := proxy.SOCKS5("tcp", PROXY_ADDR, nil, proxy.Direct)
+		torDialer, err := proxy.SOCKS5("tcp", opts.torAddress, nil, proxy.Direct)
 		if err != nil {
 			fmt.Println("FATAL: %v", err)
 			os.Exit(-1)
