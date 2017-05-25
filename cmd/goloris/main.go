@@ -138,7 +138,7 @@ func usage() {
 	fmt.Println("EXAMPLES")
 	fmt.Printf("  %s -connections=500 192.168.0.1\n", os.Args[0])
 	fmt.Printf("  %s -https -connections=500 192.168.0.1\n", os.Args[0])
-	fmt.Printf("  %s -useragent=\"some user-agent string\" -https -connections=500 192.168.0.1\n", os.Args[0])
+	fmt.Printf("  %s -randomAgent=0 -useragent=\"some user-agent string\" -https -connections=500 192.168.0.1\n", os.Args[0])
 	fmt.Println("")
 }
 
