@@ -1,7 +1,7 @@
 goloris
 =======
 
-[Slowloris HTTP DoS](http://ckers.org/slowloris/) implementation in golang with TOR support (with SOCKS5 proxy mode) and random User Agent.
+[Slowloris HTTP DoS](https://en.wikipedia.org/wiki/Slowloris_(computer_security)) implementation in golang with TOR support (with SOCKS5 proxy mode) and random User Agent.
 
 ```
 usage: ./goloris [OPTIONS]... TARGET
